@@ -21,6 +21,13 @@ import (
 // account, identified by the bearer API key.
 const usageLimitsPath = "/api/v1/users/me/plan/usage-limits"
 
+// profilePath is Cline's documented account-profile endpoint (Enterprise
+// API reference): GET returns {id, email, displayName, ...} for the caller's
+// account, identified by the same bearer API key used for quota. Used only
+// to label a credential's tile with the actual account name — never to
+// authorize or route requests.
+const profilePath = "/api/v1/users/me"
+
 type quotaWindow struct {
 	Status   string `json:"status"`
 	Percent  int    `json:"percent"`
@@ -36,6 +43,7 @@ type quotaUsage struct {
 type quotaCard struct {
 	KeyID string      `json:"key_id"`
 	Label string      `json:"label"`
+	Name  string      `json:"name,omitempty"`
 	Usage *quotaUsage `json:"usage,omitempty"`
 }
 
@@ -60,6 +68,15 @@ type upstreamLimit struct {
 	Type        string  `json:"type"`
 	PercentUsed float64 `json:"percentUsed"`
 	ResetsAt    string  `json:"resetsAt"`
+}
+
+// upstreamProfileResponse decodes Cline's account-profile payload:
+// {"success":true,"data":{"id":"...","email":"...","displayName":"..."}}
+type upstreamProfileResponse struct {
+	Success bool `json:"success"`
+	Data    struct {
+		DisplayName string `json:"displayName"`
+	} `json:"data"`
 }
 
 func quotaKeyID(key string) string {
@@ -105,7 +122,11 @@ func (m *Manager) HandleManagement(ctx context.Context, req pluginapi.Management
 			if key.Label != "" {
 				label = key.Label
 			}
-			cards = append(cards, quotaCard{KeyID: quotaKeyID(key.Value), Label: label})
+			// Best-effort: an unreachable/failed profile fetch must not
+			// blank the whole card list, so the name is simply omitted and
+			// the tile falls back to "ClinePass" alone.
+			name, _ := m.fetchAccountName(ctx, cfg, key.Value)
+			cards = append(cards, quotaCard{KeyID: quotaKeyID(key.Value), Label: label, Name: name})
 		}
 		return quotaJSON(quotaList{Cards: cards})
 	}
@@ -173,6 +194,35 @@ func (m *Manager) fetchQuota(ctx context.Context, cfg config.Config, key string)
 		}
 	}
 	return usage, nil
+}
+
+// fetchAccountName calls Cline's account-profile endpoint and returns the
+// caller's display name. Failures are returned as errors for callers that
+// want to distinguish them, but the plugin's own listing path always
+// treats them as "no name available" rather than a hard failure — a slow
+// or unreachable profile endpoint must not blank the whole card list.
+func (m *Manager) fetchAccountName(ctx context.Context, cfg config.Config, key string) (string, error) {
+	if m.bridge == nil {
+		return "", fmt.Errorf("quota bridge unavailable")
+	}
+	ctx, cancel := context.WithTimeout(ctx, cfg.RequestTimeout)
+	defer cancel()
+	resp, err := m.bridge.Do(ctx, pluginapi.HTTPRequest{
+		Method: http.MethodGet,
+		URL:    strings.TrimRight(cfg.BaseURL, "/") + profilePath,
+		Headers: http.Header{
+			"Authorization": []string{"Bearer " + key},
+			"Accept":        []string{"application/json"},
+		},
+	})
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("profile upstream request failed")
+	}
+	var decoded upstreamProfileResponse
+	if err := json.Unmarshal(resp.Body, &decoded); err != nil || !decoded.Success {
+		return "", fmt.Errorf("profile response invalid")
+	}
+	return decoded.Data.DisplayName, nil
 }
 
 func statusFor(percentUsed float64) string {

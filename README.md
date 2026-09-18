@@ -14,12 +14,16 @@ polls ClinePass's usage-limits endpoint on demand.
 
 - Registers one Management API route (`POST /plugins/clinepass-quota-cliproxyapi/quota-usage`)
   and one resource page (`GET /quota`, menu entry **ClinePass Quota**).
-- The quota page shows one card per configured key with a **Refresh** button (the card title
-  is generic — `ClinePass` — not derived from the key; the plugin's JSON API separately
-  identifies each key by a masked suffix, e.g. `ClinePass ••••1234`, via `api-keys[].label`
-  or a default derived from the key itself, never the full key).
-- Refreshing a card calls, through the host's own `host.http.do` callback (so it reuses
-  CLIProxyAPI's proxy settings, logging, and HTTP client — the key never leaves that path):
+- The quota page shows one card per configured key with a **Refresh** button. On every page
+  load the plugin calls `GET https://api.cline.bot/api/v1/users/me` (same bearer key) and
+  titles the card `ClinePass · <displayName>` — e.g. `ClinePass · Przemek` — falling back to
+  a plain `ClinePass` title if that lookup fails (an unreachable profile endpoint never blanks
+  the card list). The plugin's JSON API separately identifies each key by a masked suffix,
+  e.g. `ClinePass ••••1234`, via `api-keys[].label` or a default derived from the key itself,
+  never the full key.
+- Refreshing a card's quota windows calls, through the host's own `host.http.do` callback (so
+  it reuses CLIProxyAPI's proxy settings, logging, and HTTP client — the key never leaves that
+  path):
 
   ```
   GET https://api.cline.bot/api/v1/users/me/plan/usage-limits
@@ -93,9 +97,11 @@ and a [release workflow](#release-ci) that publishes the required
    equivalent Management Center button). CLIProxyAPI downloads the release asset for the
    current platform, verifies it against `checksums.txt`, and writes it into `plugins/`.
 
-**Requires a public repository.** GitHub release-asset downloads for a private repo need an
-authenticated request; CLIProxyAPI's plugin-store installer fetches anonymously, so this path
-will fail with this repo private. Use Option A until/unless the repo is made public.
+**Public repository, and requires a tagged release.** GitHub release-asset downloads need an
+anonymous, unauthenticated request, which only works against a public repo (this one is
+public). The store also resolves the *actual* installed version from the latest GitHub
+release tag, not `registry.json`'s `version` field — push a `v*` tag (see [Release
+(CI)](#release-ci)) before Option B has anything to install.
 
 ## Configuration
 
@@ -143,12 +149,19 @@ go test ./...
 
 `internal/plugin/quota_test.go` covers: parsing a real ClinePass usage-limits response
 (including tolerating unknown future limit `type` values), surfacing upstream HTTP failures
-as errors, listing configured keys without contacting the upstream API, and the default
-masked-key-suffix label (never leaking the unmasked key). `internal/plugin/host_contract_test.go`
-decodes this plugin's `management.register`/`management.handle` RPC responses using
-CLIProxyAPI's own `sdk/pluginapi` types (`ManagementRoute`, `ResourceRoute`,
-`ManagementResponse`) — the same types the real host uses to parse them — catching any wire
-contract mismatch here instead of in production.
+as errors, the default masked-key-suffix label (never leaking the unmasked key), listing
+cards with a best-effort account-profile fetch (a failed/unreachable profile lookup degrades
+to no name rather than an empty card list), and the account name actually reaching the JSON
+response. `internal/plugin/host_contract_test.go` decodes this plugin's
+`management.register`/`management.handle` RPC responses using CLIProxyAPI's own
+`sdk/pluginapi` types (`ManagementRoute`, `ResourceRoute`, `ManagementResponse`) — the same
+types the real host uses to parse them — catching any wire contract mismatch here instead of
+in production.
+
+This plugin was also verified end-to-end against a real CLIProxyAPI instance and a real
+ClinePass account: plugin registration, the Management API listing/refresh round trip, and
+the bundled quota page's actual browser JavaScript (driven via jsdom against the live
+instance) all confirmed working before each release in this history.
 
 ## Scope / non-goals
 

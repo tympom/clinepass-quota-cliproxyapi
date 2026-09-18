@@ -85,10 +85,15 @@ func TestFetchQuotaUpstreamFailureFails(t *testing.T) {
 	}
 }
 
-func TestHandleManagementListsConfiguredKeysWithoutCallingUpstream(t *testing.T) {
+func TestHandleManagementListsConfiguredKeysWithBestEffortProfileFetch(t *testing.T) {
 	calls := 0
 	mgr := NewManager(NewHostBridge(func(method string, payload []byte) ([]byte, error) {
 		calls++
+		if method != pluginabi.MethodHostHTTPDo {
+			t.Fatalf("unexpected host method %q", method)
+		}
+		// Malformed/unreachable-upstream simulation: listing must still
+		// succeed with the name simply omitted, never a hard failure.
 		return nil, nil
 	}))
 	mgr.mu.Lock()
@@ -106,8 +111,8 @@ func TestHandleManagementListsConfiguredKeysWithoutCallingUpstream(t *testing.T)
 	if err != nil {
 		t.Fatalf("HandleManagement returned error: %v", err)
 	}
-	if calls != 0 {
-		t.Fatalf("listing cards must not call upstream, got %d calls", calls)
+	if calls != 1 {
+		t.Fatalf("expected exactly one profile-fetch call per key, got %d calls", calls)
 	}
 	var list quotaList
 	if err := json.Unmarshal(resp.Body, &list); err != nil {
@@ -116,11 +121,57 @@ func TestHandleManagementListsConfiguredKeysWithoutCallingUpstream(t *testing.T)
 	if len(list.Cards) != 1 || list.Cards[0].Label != "primary" {
 		t.Fatalf("unexpected cards: %+v", list.Cards)
 	}
+	if list.Cards[0].Name != "" {
+		t.Fatalf("expected empty Name on a failed profile fetch, got %q", list.Cards[0].Name)
+	}
+}
+
+func TestHandleManagementListsAccountNameFromProfile(t *testing.T) {
+	mgr := NewManager(NewHostBridge(func(method string, payload []byte) ([]byte, error) {
+		var req hostHTTPReq
+		if err := json.Unmarshal(payload, &req); err != nil {
+			t.Fatalf("undecodable host.http.do request: %v", err)
+		}
+		if req.URL != config.DefaultBaseURL+profilePath {
+			t.Fatalf("unexpected profile URL %q", req.URL)
+		}
+		resp := pluginapi.HTTPResponse{StatusCode: 200, Body: []byte(`{"success":true,"data":{"id":"usr-1","email":"a@b.c","displayName":"Przemek"}}`)}
+		respJSON, _ := json.Marshal(resp)
+		env := struct {
+			OK     bool            `json:"ok"`
+			Result json.RawMessage `json:"result"`
+		}{OK: true, Result: respJSON}
+		out, _ := json.Marshal(env)
+		return out, nil
+	}))
+	mgr.mu.Lock()
+	mgr.cfg = config.Config{
+		BaseURL:        config.DefaultBaseURL,
+		RequestTimeout: config.DefaultRequestTimeout,
+		APIKeys:        []config.APIKey{{Value: "k1"}},
+	}
+	mgr.mu.Unlock()
+
+	resp, err := mgr.HandleManagement(context.Background(), pluginapi.ManagementRequest{
+		Method: "POST",
+		Path:   "/v0/management/plugins/" + pluginName + "/quota-usage",
+	})
+	if err != nil {
+		t.Fatalf("HandleManagement returned error: %v", err)
+	}
+	var list quotaList
+	if err := json.Unmarshal(resp.Body, &list); err != nil {
+		t.Fatalf("undecodable response body: %v", err)
+	}
+	if len(list.Cards) != 1 || list.Cards[0].Name != "Przemek" {
+		t.Fatalf("expected card Name %q, got %+v", "Przemek", list.Cards)
+	}
 }
 
 func TestDefaultLabelMasksKeySuffix(t *testing.T) {
 	mgr := NewManager(NewHostBridge(func(method string, payload []byte) ([]byte, error) {
-		t.Fatalf("listing cards must not call upstream, method=%s", method)
+		// Listing now performs a best-effort profile fetch; simulate a
+		// failed/unreachable upstream rather than asserting zero calls.
 		return nil, nil
 	}))
 	mgr.mu.Lock()
