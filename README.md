@@ -57,8 +57,9 @@ no platform-specific code, so cross-compilation is otherwise unconstrained.
 ## Release (CI)
 
 `.github/workflows/build.yml` runs `go vet`/`go test` on every push and PR, and on any `v*`
-tag cross-compiles `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, and
-`windows/amd64`, then publishes a GitHub release with one
+tag cross-compiles `linux/amd64` and `linux/arm64` (the only deploy targets in actual use —
+`docker`/`uc1`/`ivy217` are all Linux; add darwin/windows matrix entries back if you ever need
+them), then publishes a GitHub release with one
 `clinepass-quota-cliproxyapi_<version>_<goos>_<goarch>.zip` per platform plus a combined
 `checksums.txt` — the exact format CLIProxyAPI's Plugin Store installer expects (see
 [Install → Option B](#option-b--cliproxyapi-plugin-store)).
