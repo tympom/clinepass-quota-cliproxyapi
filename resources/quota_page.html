@@ -237,11 +237,11 @@ body { margin: 0; padding: 32px; color: var(--text-primary); background: var(--b
     app.textContent = "";
     if (!cards.length) { const p = document.createElement("p"); p.className = "quota-muted"; p.setAttribute("role", "status"); p.textContent = "No configured credentials."; app.appendChild(p); return; }
     const grid = document.createElement("div"); grid.className = "quota-grid";
-    cards.forEach(card => {
+    cards.forEach((card, cardIndex) => {
       const section = document.createElement("section"); section.className = "quota-card";
       const header = document.createElement("div"); header.className = "quota-card-header";
       const badge = document.createElement("span"); badge.className = "credential-badge"; badge.textContent = "CP"; badge.setAttribute("aria-hidden", "true");
-      const title = document.createElement("h2"); title.className = "credential-name"; title.textContent = card.label; header.append(badge, title); section.appendChild(header);
+      const title = document.createElement("h2"); title.className = "credential-name"; title.textContent = "ClinePass"; header.append(badge, title); section.appendChild(header);
       [["rolling", "5-hour"], ["weekly", "Weekly"], ["monthly", "Monthly"]].forEach(([name, display]) => {
         const row = document.createElement("div"); row.className = "quota-row";
         const rowHeader = document.createElement("div"); rowHeader.className = "quota-row-header"; const label = document.createElement("span"); label.className = "quota-label"; label.textContent = display; rowHeader.appendChild(label); row.appendChild(rowHeader);
@@ -252,7 +252,7 @@ body { margin: 0; padding: 32px; color: var(--text-primary); background: var(--b
       const updated = fetchedAt.get(card.key_id);
       if (updated) { const timestamp = document.createElement("div"); timestamp.className = "quota-meta"; timestamp.textContent = "Updated " + new Date(updated).toLocaleString(); section.appendChild(timestamp); }
       const actions = document.createElement("div"); actions.className = "quota-actions";
-      const button = document.createElement("button"); button.className = "quota-refresh"; button.textContent = "Refresh"; button.setAttribute("aria-label", "Refresh " + card.label);
+      const button = document.createElement("button"); button.className = "quota-refresh"; button.textContent = "Refresh"; button.setAttribute("aria-label", "Refresh ClinePass credential " + (cardIndex + 1));
       const error = document.createElement("span"); error.className = "quota-error"; error.setAttribute("role", "status");
       button.onclick = () => { button.disabled = true; error.textContent = ""; request({key_id: card.key_id}).then(result => { const timestamp = new Date().toISOString(); values.set(card.key_id, result.usage); fetchedAt.set(card.key_id, timestamp); cache[card.key_id] = {usage: result.usage, fetched_at: timestamp}; saveCache(); render(cards); }).catch(err => { error.textContent = err.message || "Refresh failed"; button.disabled = false; }); };
       actions.append(button, error); section.appendChild(actions); grid.appendChild(section);

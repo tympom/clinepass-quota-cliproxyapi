@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "plugins": [
+    {
+      "id": "clinepass-quota-cliproxyapi",
+      "name": "ClinePass Quota",
+      "description": "Management Center page showing 5-hour, weekly, and monthly ClinePass usage windows per configured API key.",
+      "author": "tympom",
+      "version": "0.1.0",
+      "repository": "https://github.com/tympom/clinepass-quota-cliproxyapi",
+      "homepage": "https://github.com/tympom/clinepass-quota-cliproxyapi",
+      "tags": ["management", "quota", "clinepass"]
+    }
+  ]
+}

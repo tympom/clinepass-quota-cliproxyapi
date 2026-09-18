@@ -14,8 +14,10 @@ polls ClinePass's usage-limits endpoint on demand.
 
 - Registers one Management API route (`POST /plugins/clinepass-quota-cliproxyapi/quota-usage`)
   and one resource page (`GET /quota`, menu entry **ClinePass Quota**).
-- The quota page lists every configured key (identified by a SHA-256 hash of the key value,
-  never the key itself) with a **Refresh** button per card.
+- The quota page shows one card per configured key with a **Refresh** button (the card title
+  is generic — `ClinePass` — not derived from the key; the plugin's JSON API separately
+  identifies each key by a masked suffix, e.g. `ClinePass ••••1234`, via `api-keys[].label`
+  or a default derived from the key itself, never the full key).
 - Refreshing a card calls, through the host's own `host.http.do` callback (so it reuses
   CLIProxyAPI's proxy settings, logging, and HTTP client — the key never leaves that path):
 
@@ -48,13 +50,52 @@ To target a different platform/arch, change `GOOS`/`GOARCH` in the Dockerfile's 
 build` step (and its file extension: `.dylib` on macOS, `.dll` on Windows) — this plugin has
 no platform-specific code, so cross-compilation is otherwise unconstrained.
 
+## Release (CI)
+
+`.github/workflows/build.yml` runs `go vet`/`go test` on every push and PR, and on any `v*`
+tag cross-compiles `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, and
+`windows/amd64`, then publishes a GitHub release with one
+`clinepass-quota-cliproxyapi_<version>_<goos>_<goarch>.zip` per platform plus a combined
+`checksums.txt` — the exact format CLIProxyAPI's Plugin Store installer expects (see
+[Install → Option B](#option-b--cliproxyapi-plugin-store)).
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
 ## Install
+
+### Option A — manual copy
 
 Copy the built library into CLIProxyAPI's plugin directory for the current platform:
 
 ```
 plugins/linux/amd64/clinepass-quota-cliproxyapi.so
 ```
+
+### Option B — CLIProxyAPI Plugin Store
+
+This repo ships a [Plugin Store registry manifest](./registry.json) (`schema_version: 1`,
+per CLIProxyAPI's [Plugin Store Publishing Format](https://help.router-for.me/plugin/development#plugin-store-publishing-format))
+and a [release workflow](#release-ci) that publishes the required
+`<pluginID>_<version>_<goos>_<goarch>.zip` + `checksums.txt` assets on every `v*` tag.
+
+1. Add this repo as a third-party store source in CLIProxyAPI's `config.yaml`:
+   ```yaml
+   plugins:
+     store-sources:
+       - "https://raw.githubusercontent.com/tympom/clinepass-quota-cliproxyapi/master/registry.json"
+   ```
+2. In the Management Center, open the Plugin Store page (or `GET /v0/management/plugin-store`)
+   — `clinepass-quota-cliproxyapi` should now be listed.
+3. Install it (`POST /v0/management/plugin-store/clinepass-quota-cliproxyapi/install`, or the
+   equivalent Management Center button). CLIProxyAPI downloads the release asset for the
+   current platform, verifies it against `checksums.txt`, and writes it into `plugins/`.
+
+**Requires a public repository.** GitHub release-asset downloads for a private repo need an
+authenticated request; CLIProxyAPI's plugin-store installer fetches anonymously, so this path
+will fail with this repo private. Use Option A until/unless the repo is made public.
 
 ## Configuration
 
@@ -70,7 +111,7 @@ plugins:
       # ClinePass API keys to poll for usage-limit windows. Supports ${ENV_VAR} expansion.
       api-keys:
         - value: "${CLINE_API_KEY}"
-          label: "ClinePass" # optional; defaults to a hash-derived label
+          label: "ClinePass" # optional; defaults to a masked key suffix (e.g. ••••1234)
       # Upstream base URL (default: "https://api.cline.bot")
       # base-url: "https://api.cline.bot"
       # Upstream request timeout (default: "15s")
@@ -102,7 +143,12 @@ go test ./...
 
 `internal/plugin/quota_test.go` covers: parsing a real ClinePass usage-limits response
 (including tolerating unknown future limit `type` values), surfacing upstream HTTP failures
-as errors, and listing configured keys without contacting the upstream API.
+as errors, listing configured keys without contacting the upstream API, and the default
+masked-key-suffix label (never leaking the unmasked key). `internal/plugin/host_contract_test.go`
+decodes this plugin's `management.register`/`management.handle` RPC responses using
+CLIProxyAPI's own `sdk/pluginapi` types (`ManagementRoute`, `ResourceRoute`,
+`ManagementResponse`) — the same types the real host uses to parse them — catching any wire
+contract mismatch here instead of in production.
 
 ## Scope / non-goals
 
