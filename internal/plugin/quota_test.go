@@ -3,6 +3,7 @@ package plugin
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/router-for-me/CLIProxyAPI/v7/sdk/pluginabi"
@@ -114,5 +115,41 @@ func TestHandleManagementListsConfiguredKeysWithoutCallingUpstream(t *testing.T)
 	}
 	if len(list.Cards) != 1 || list.Cards[0].Label != "primary" {
 		t.Fatalf("unexpected cards: %+v", list.Cards)
+	}
+}
+
+func TestDefaultLabelMasksKeySuffix(t *testing.T) {
+	mgr := NewManager(NewHostBridge(func(method string, payload []byte) ([]byte, error) {
+		t.Fatalf("listing cards must not call upstream, method=%s", method)
+		return nil, nil
+	}))
+	mgr.mu.Lock()
+	mgr.cfg = config.Config{
+		BaseURL:        config.DefaultBaseURL,
+		RequestTimeout: config.DefaultRequestTimeout,
+		APIKeys:        []config.APIKey{{Value: "sk-clinepass-abcd1234"}},
+	}
+	mgr.mu.Unlock()
+
+	resp, err := mgr.HandleManagement(context.Background(), pluginapi.ManagementRequest{
+		Method: "POST",
+		Path:   "/v0/management/plugins/" + pluginName + "/quota-usage",
+	})
+	if err != nil {
+		t.Fatalf("HandleManagement returned error: %v", err)
+	}
+	var list quotaList
+	if err := json.Unmarshal(resp.Body, &list); err != nil {
+		t.Fatalf("undecodable response body: %v", err)
+	}
+	if len(list.Cards) != 1 {
+		t.Fatalf("expected exactly one card, got %+v", list.Cards)
+	}
+	got := list.Cards[0].Label
+	if got != "ClinePass ••••1234" {
+		t.Fatalf("expected masked-suffix label %q, got %q", "ClinePass ••••1234", got)
+	}
+	if strings.Contains(got, "sk-clinepass-abcd") {
+		t.Fatalf("label must not leak the unmasked key prefix: %q", got)
 	}
 }

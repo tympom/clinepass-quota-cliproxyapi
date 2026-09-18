@@ -62,10 +62,23 @@ type upstreamLimit struct {
 	ResetsAt    string  `json:"resetsAt"`
 }
 
-func quotaIdentity(key string) (id, label string) {
+func quotaKeyID(key string) string {
 	digest := sha256.Sum256([]byte(key))
-	hash := hex.EncodeToString(digest[:])
-	return "clinepass-key-" + hash, "ClinePass credential " + hash[:12]
+	return "clinepass-key-" + hex.EncodeToString(digest[:])
+}
+
+// defaultLabel identifies a credential by the last few characters of its
+// actual key value (masking the rest) instead of an opaque content hash, so
+// a tile is recognizable at a glance against the key you actually configured
+// — the same masking convention as Stripe/GitHub token displays. Safe here
+// because the Management Center is already authenticated before this page
+// is reachable.
+func defaultLabel(key string) string {
+	suffix := key
+	if len(key) > 4 {
+		suffix = key[len(key)-4:]
+	}
+	return "ClinePass ••••" + suffix
 }
 
 // HandleManagement serves the embedded quota page under
@@ -88,21 +101,22 @@ func (m *Manager) HandleManagement(ctx context.Context, req pluginapi.Management
 	if body.KeyID == "" {
 		cards := make([]quotaCard, 0, len(cfg.APIKeys))
 		for _, key := range cfg.APIKeys {
-			id, label := quotaIdentity(key.Value)
+			label := defaultLabel(key.Value)
 			if key.Label != "" {
 				label = key.Label
 			}
-			cards = append(cards, quotaCard{KeyID: id, Label: label})
+			cards = append(cards, quotaCard{KeyID: quotaKeyID(key.Value), Label: label})
 		}
 		return quotaJSON(quotaList{Cards: cards})
 	}
 	for _, key := range cfg.APIKeys {
-		id, label := quotaIdentity(key.Value)
-		if key.Label != "" {
-			label = key.Label
-		}
+		id := quotaKeyID(key.Value)
 		if id != body.KeyID {
 			continue
+		}
+		label := defaultLabel(key.Value)
+		if key.Label != "" {
+			label = key.Label
 		}
 		usage, err := m.fetchQuota(ctx, cfg, key.Value)
 		if err != nil {
