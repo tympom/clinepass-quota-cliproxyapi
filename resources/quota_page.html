@@ -171,17 +171,33 @@ body { margin: 0; padding: 32px; color: var(--text-primary); background: var(--b
     const sign = delta < 0 ? -1 : 1;
     const abs = Math.abs(delta);
     if (abs >= DAY_MS) return {value: sign * Math.floor(abs / DAY_MS), unit: "day"};
-    if (abs >= HOUR_MS) return {value: sign * Math.floor(abs / HOUR_MS), unit: "hour"};
+    if (abs >= HOUR_MS) {
+      // Hour-only granularity truncates away up to 59 minutes of real
+      // precision right where it matters most (an imminent reset), so this
+      // bucket carries the remainder minutes alongside the hour count
+      // instead of reusing the single-unit Intl.RelativeTimeFormat call.
+      const hours = Math.floor(abs / HOUR_MS);
+      const minutes = Math.floor((abs % HOUR_MS) / MINUTE_MS);
+      return {value: sign * hours, unit: "hour", minutes};
+    }
     return {value: sign * Math.max(1, Math.floor(abs / MINUTE_MS)), unit: "minute"};
   }
   let relativeFormatter = null;
-  function formatRelativeInstant(targetMs, nowMs) {
-    const parts = relativeTimeParts(targetMs, nowMs);
+  function getRelativeFormatter() {
     if (!relativeFormatter) {
       try { relativeFormatter = new Intl.RelativeTimeFormat(undefined, {numeric: "always"}); }
       catch (_) { relativeFormatter = new Intl.RelativeTimeFormat("en", {numeric: "always"}); }
     }
-    return relativeFormatter.format(parts.value, parts.unit);
+    return relativeFormatter;
+  }
+  function formatRelativeInstant(targetMs, nowMs) {
+    const parts = relativeTimeParts(targetMs, nowMs);
+    if (parts.unit === "hour" && parts.minutes > 0) {
+      const hours = Math.abs(parts.value);
+      const compact = hours + "h " + parts.minutes + "m";
+      return parts.value < 0 ? compact + " ago" : "in " + compact;
+    }
+    return getRelativeFormatter().format(parts.value, parts.unit);
   }
   function formatInstantShort(ms) {
     if (!Number.isFinite(ms)) return "-";
