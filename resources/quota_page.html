@@ -150,6 +150,48 @@ body { margin: 0; padding: 32px; color: var(--text-primary); background: var(--b
     });
   }
   function text(parent, value) { const node = document.createElement("span"); node.textContent = value == null || value === "" ? "-" : value; parent.appendChild(node); }
+  // Ported from CLIProxyAPI's own Management Center (the native quota UI
+  // used for Claude/Codex/Kimi/etc): src/utils/quota/resetInstants.ts
+  // (parseIsoToMs) and src/utils/quota/relativeTime.ts (relativeTimeParts,
+  // formatInstantShort, formatRelativeInstant), so this plugin's reset
+  // labels match the native "MM-DD HH:mm · in X days" rendering exactly.
+  const DAY_MS = 86400000, HOUR_MS = 3600000, MINUTE_MS = 60000;
+  function parseIsoToMs(value) {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    // Tolerates the over-precise fractional seconds some providers emit
+    // (e.g. Go's nanosecond RFC3339Nano), which `new Date()` rejects on some engines.
+    const normalized = trimmed.replace(/(\.\d{6})\d+/, "$1");
+    const ms = new Date(normalized).getTime();
+    return Number.isFinite(ms) ? ms : null;
+  }
+  function relativeTimeParts(targetMs, nowMs) {
+    const delta = targetMs - nowMs;
+    const sign = delta < 0 ? -1 : 1;
+    const abs = Math.abs(delta);
+    if (abs >= DAY_MS) return {value: sign * Math.floor(abs / DAY_MS), unit: "day"};
+    if (abs >= HOUR_MS) return {value: sign * Math.floor(abs / HOUR_MS), unit: "hour"};
+    return {value: sign * Math.max(1, Math.floor(abs / MINUTE_MS)), unit: "minute"};
+  }
+  let relativeFormatter = null;
+  function formatRelativeInstant(targetMs, nowMs) {
+    const parts = relativeTimeParts(targetMs, nowMs);
+    if (!relativeFormatter) {
+      try { relativeFormatter = new Intl.RelativeTimeFormat(undefined, {numeric: "always"}); }
+      catch (_) { relativeFormatter = new Intl.RelativeTimeFormat("en", {numeric: "always"}); }
+    }
+    return relativeFormatter.format(parts.value, parts.unit);
+  }
+  function formatInstantShort(ms) {
+    if (!Number.isFinite(ms)) return "-";
+    return new Date(ms).toLocaleString(undefined, {month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false});
+  }
+  function formatReset(iso) {
+    const ms = parseIsoToMs(iso);
+    if (ms === null) return "-";
+    return formatInstantShort(ms) + " · " + formatRelativeInstant(ms, Date.now());
+  }
   function renderUsage(row, usage) {
     const value = document.createElement("div"); value.className = "quota-percent";
     const track = document.createElement("div"); track.className = "quota-track";
@@ -158,7 +200,7 @@ body { margin: 0; padding: 32px; color: var(--text-primary); background: var(--b
     fill.style.width = percent + "%";
     track.setAttribute("role", "progressbar"); track.setAttribute("aria-valuemin", "0"); track.setAttribute("aria-valuemax", "100"); track.setAttribute("aria-valuenow", String(percent)); track.setAttribute("aria-label", "Quota used"); track.appendChild(fill);
     value.textContent = percent + "%";
-    const meta = document.createElement("div"); meta.className = "quota-meta"; text(meta, usage.status + " · resets " + usage.resets_at);
+    const meta = document.createElement("div"); meta.className = "quota-meta"; text(meta, "resets " + formatReset(usage.resets_at));
     row.append(value, track, meta);
   }
   function render(cards) {
