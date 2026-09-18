@@ -170,7 +170,16 @@ body { margin: 0; padding: 32px; color: var(--text-primary); background: var(--b
     const delta = targetMs - nowMs;
     const sign = delta < 0 ? -1 : 1;
     const abs = Math.abs(delta);
-    if (abs >= DAY_MS) return {value: sign * Math.floor(abs / DAY_MS), unit: "day"};
+    if (abs >= DAY_MS) {
+      // Weekly/monthly windows land here and previously truncated to whole
+      // days only, losing up to 23 hours of precision (a monthly reset
+      // showing "in 12 days" whether it is 12d 1h or 12d 23h away). Carries
+      // the remainder hours alongside the day count, same rationale as the
+      // hour bucket's remainder minutes below.
+      const days = Math.floor(abs / DAY_MS);
+      const hours = Math.floor((abs % DAY_MS) / HOUR_MS);
+      return {value: sign * days, unit: "day", hours};
+    }
     if (abs >= HOUR_MS) {
       // Hour-only granularity truncates away up to 59 minutes of real
       // precision right where it matters most (an imminent reset), so this
@@ -192,6 +201,11 @@ body { margin: 0; padding: 32px; color: var(--text-primary); background: var(--b
   }
   function formatRelativeInstant(targetMs, nowMs) {
     const parts = relativeTimeParts(targetMs, nowMs);
+    if (parts.unit === "day" && parts.hours > 0) {
+      const days = Math.abs(parts.value);
+      const compact = days + "d " + parts.hours + "h";
+      return parts.value < 0 ? compact + " ago" : "in " + compact;
+    }
     if (parts.unit === "hour" && parts.minutes > 0) {
       const hours = Math.abs(parts.value);
       const compact = hours + "h " + parts.minutes + "m";
