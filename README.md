@@ -118,7 +118,11 @@ plugins:
       # ClinePass API keys to poll for usage-limit windows. Supports ${ENV_VAR} expansion.
       api-keys:
         - value: "${CLINE_API_KEY}"
-          label: "ClinePass" # optional; defaults to a masked key suffix (e.g. ••••1234)
+          # optional; JSON API only — the quota page itself always titles a
+          # card "ClinePass · <account displayName>" (fetched live from
+          # /api/v1/users/me), never this value. Omit unless you consume
+          # the plugin's own quota-usage JSON directly.
+          # label: "ClinePass"
       # Upstream base URL (default: "https://api.cline.bot")
       # base-url: "https://api.cline.bot"
       # Upstream request timeout (default: "15s")
