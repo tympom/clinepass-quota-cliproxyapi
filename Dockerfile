@@ -3,7 +3,7 @@
 # local source in this directory. Locally authored code, not a pinned
 # upstream commit: reproducibility is verified by a deterministic --no-cache
 # rebuild diff instead of an official-release comparison (see build report).
-FROM golang:1.26-bookworm AS builder
+FROM golang:1.27-bookworm AS builder
 
 WORKDIR /src
 
