@@ -14,7 +14,8 @@ polls ClinePass's usage-limits endpoint on demand.
 
 - Registers one Management API route (`POST /plugins/clinepass-quota-cliproxyapi/quota-usage`)
   and one resource page (`GET /quota`, menu entry **ClinePass Quota**).
-- The quota page shows one card per configured key with a **Refresh** button. On every page
+- The quota page shows one card per configured key with a **Refresh** button, plus a
+  **Refresh All** button that refreshes every card in turn. On every page
   load the plugin calls `GET https://api.cline.bot/api/v1/users/me` (same bearer key) and
   titles the card `ClinePass · <displayName>` — e.g. `ClinePass · Przemek` — falling back to
   a plain `ClinePass` title if that lookup fails (an unreachable profile endpoint never blanks
@@ -56,8 +57,8 @@ no platform-specific code, so cross-compilation is otherwise unconstrained.
 
 ## Release (CI)
 
-`.github/workflows/build.yml` runs `go vet`/`go test` on every push and PR, and on any `v*`
-tag cross-compiles `linux/amd64` and `linux/arm64` (the only deploy targets in actual use —
+`.github/workflows/build.yml` runs no tests (run `go test`/`go vet` locally before tagging). On
+every push and PR it builds, and on any `v*` tag it cross-compiles `linux/amd64` and `linux/arm64` (the only deploy targets in actual use —
 `conductor`/`uc1`/`ivy217` are all Linux; add darwin/windows matrix entries back if you ever need
 them), then publishes a GitHub release with one
 `clinepass-quota-cliproxyapi_<version>_<goos>_<goarch>.zip` per platform plus a combined
