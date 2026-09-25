@@ -17,7 +17,7 @@ Add this repo as a store source in CLIProxyAPI's `config.yaml`:
 plugins:
   enabled: true
   store-sources:
-    - "https://raw.githubusercontent.com/tympom/clinepass-quota-cliproxyapi/master/registry.json"
+    - "https://raw.githubusercontent.com/tympom/clinepass-quota-cliproxyapi/main/registry.json"
 ```
 
 Then install it from the Management Center's Plugin Store page.
