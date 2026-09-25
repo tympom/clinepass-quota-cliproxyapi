@@ -16,12 +16,12 @@ import (
 // as the Management API/resource route prefix.
 const (
 	pluginName    = "clinepass-quota-cliproxyapi"
-	pluginVersion = "1.0.6"
+	pluginVersion = "1.0.7"
 )
 
 // githubRepoURL satisfies the host's validPlugin gate (Metadata.GitHubRepository
-// must be non-empty). This plugin is locally built and not published.
-const githubRepoURL = "https://github.com/local/clinepass-quota-cliproxyapi"
+// must be non-empty).
+const githubRepoURL = "https://github.com/tympom/clinepass-quota-cliproxyapi"
 
 // logoURL is shown by the Management Center Plugins page.
 const logoURL = "https://raw.githubusercontent.com/tympom/clinepass-quota-cliproxyapi/master/assets/logo.png"
