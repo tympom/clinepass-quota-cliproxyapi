@@ -42,9 +42,25 @@ type rawKey struct {
 	Label string `yaml:"label"`
 }
 
+// UnmarshalYAML accepts a key as a bare string ("sk-...") or as a
+// {value, label} mapping, so the Management Center editor takes ["sk-..."].
+// Errors carry no node values (see Load).
+func (k *rawKey) UnmarshalYAML(n *yaml.Node) error {
+	switch n.Kind {
+	case yaml.ScalarNode:
+		k.Value = n.Value
+		return nil
+	case yaml.MappingNode:
+		type plain rawKey
+		return n.Decode((*plain)(k))
+	default:
+		return fmt.Errorf("api-keys: entry must be a string or a mapping")
+	}
+}
+
 // Load decodes YAML, expands ${VAR} references in api-key values, applies
 // defaults, and validates. Decode errors never echo decoded node values — a
-// malformed entry (e.g. a bare-scalar API key) must not leak into the
+// malformed entry (e.g. a nested list holding an API key) must not leak into the
 // invalid_config envelope the host logs.
 func Load(yamlBytes []byte) (Config, error) {
 	var raw rawConfig

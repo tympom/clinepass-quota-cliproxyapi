@@ -135,13 +135,13 @@ plugins:
 
 | Option            | Type     | Default                  | Description                                                        |
 | ------------------ | -------- | ------------------------- | -------------------------------------------------------------------- |
-| `api-keys`         | `[]object` | *(none)* | List of ClinePass API keys (`- value: "...", label: "..."`). `${ENV_VAR}` expansion supported. Duplicates and empty values are rejected. Without keys the plugin registers and its config editor works, but the quota page has no cards. |
+| `api-keys`         | `[]string\|object` | *(none)* | List of ClinePass API keys: bare strings (`- "..."`) or objects (`- value: "...", label: "..."`). `${ENV_VAR}` expansion supported. Duplicates and empty values are rejected. Without keys the plugin registers and its config editor works, but the quota page has no cards. |
 | `base-url`         | `string` | `https://api.cline.bot`  | ClinePass API base URL. Must be valid HTTPS (or HTTP if `allow-http: true`), no query/fragment/userinfo. |
 | `request-timeout`  | `duration` | `15s`                   | Upstream request timeout for the quota fetch. Must be positive.     |
 | `allow-http`       | `bool`   | `false`                   | Permits `http://` scheme in `base-url` for local testing.           |
 
 After a Plugin Store install, add keys in **Management Center → Plugins → Edit config**
-(`api-keys` as JSON, e.g. `[{"value": "..."}]`); no manual `config.yaml` edit or restart is
+(`api-keys` as JSON, e.g. `["key"]` or `[{"value": "key", "label": "work"}]`); no manual `config.yaml` edit or restart is
 needed. When editing `config.yaml` directly, restart CLIProxyAPI (or trigger
 `plugins.configs` reconfigure if the host supports hot reload), then open
 **Management Center → ClinePass Quota**.
