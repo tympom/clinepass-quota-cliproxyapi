@@ -9,7 +9,7 @@
       "version": "1.0.8",
       "repository": "https://github.com/tympom/clinepass-quota-cliproxyapi",
       "homepage": "https://github.com/tympom/clinepass-quota-cliproxyapi",
-      "logo": "https://raw.githubusercontent.com/tympom/clinepass-quota-cliproxyapi/master/assets/logo.png",
+      "logo": "https://raw.githubusercontent.com/tympom/clinepass-quota-cliproxyapi/main/assets/logo.png",
       "tags": ["management", "quota", "clinepass"]
     }
   ]

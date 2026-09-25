@@ -24,7 +24,7 @@ const (
 const githubRepoURL = "https://github.com/tympom/clinepass-quota-cliproxyapi"
 
 // logoURL is shown by the Management Center Plugins page.
-const logoURL = "https://raw.githubusercontent.com/tympom/clinepass-quota-cliproxyapi/master/assets/logo.png"
+const logoURL = "https://raw.githubusercontent.com/tympom/clinepass-quota-cliproxyapi/main/assets/logo.png"
 
 // Manager owns dispatcher state (the current config snapshot) and routes
 // every RPC method. Safe for concurrent HandleCall use.
