@@ -16,7 +16,7 @@ import (
 // as the Management API/resource route prefix.
 const (
 	pluginName    = "clinepass-quota-cliproxyapi"
-	pluginVersion = "1.0.3"
+	pluginVersion = "1.0.4"
 )
 
 // githubRepoURL satisfies the host's validPlugin gate (Metadata.GitHubRepository

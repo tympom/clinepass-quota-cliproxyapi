@@ -117,6 +117,7 @@ plugins:
     clinepass-quota-cliproxyapi:
       enabled: true
       # ClinePass API keys to poll for usage-limit windows. Supports ${ENV_VAR} expansion.
+      # Optional at install time: with no keys the plugin still registers and shows no cards.
       api-keys:
         - value: "${CLINE_API_KEY}"
           # optional; JSON API only — the quota page itself always titles a
@@ -134,13 +135,16 @@ plugins:
 
 | Option            | Type     | Default                  | Description                                                        |
 | ------------------ | -------- | ------------------------- | -------------------------------------------------------------------- |
-| `api-keys`         | `[]object` | *(required)* | List of ClinePass API keys (`- value: "...", label: "..."`). `${ENV_VAR}` expansion supported. Duplicates and empty values are rejected. |
+| `api-keys`         | `[]object` | *(none)* | List of ClinePass API keys (`- value: "...", label: "..."`). `${ENV_VAR}` expansion supported. Duplicates and empty values are rejected. Without keys the plugin registers and its config editor works, but the quota page has no cards. |
 | `base-url`         | `string` | `https://api.cline.bot`  | ClinePass API base URL. Must be valid HTTPS (or HTTP if `allow-http: true`), no query/fragment/userinfo. |
 | `request-timeout`  | `duration` | `15s`                   | Upstream request timeout for the quota fetch. Must be positive.     |
 | `allow-http`       | `bool`   | `false`                   | Permits `http://` scheme in `base-url` for local testing.           |
 
-After editing `config.yaml`, restart CLIProxyAPI (or trigger `plugins.configs` reconfigure
-if the host supports hot reload) and open **Management Center → ClinePass Quota**.
+After a Plugin Store install, add keys in **Management Center → Plugins → Edit config**
+(`api-keys` as JSON, e.g. `[{"value": "..."}]`); no manual `config.yaml` edit or restart is
+needed. When editing `config.yaml` directly, restart CLIProxyAPI (or trigger
+`plugins.configs` reconfigure if the host supports hot reload), then open
+**Management Center → ClinePass Quota**.
 
 Note: the quota page reads the Management Center's stored management key from browser
 storage to authenticate its requests — enable **Remember password** in Management Center
