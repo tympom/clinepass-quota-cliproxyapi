@@ -16,7 +16,7 @@ import (
 // as the Management API/resource route prefix.
 const (
 	pluginName    = "clinepass-quota-cliproxyapi"
-	pluginVersion = "1.0.4"
+	pluginVersion = "1.0.5"
 )
 
 // githubRepoURL satisfies the host's validPlugin gate (Metadata.GitHubRepository
@@ -81,7 +81,7 @@ func registrationEnvelope() []byte {
 			GitHubRepository: githubRepoURL,
 			ConfigFields: []pluginapi.ConfigField{
 				{Name: "base-url", Type: pluginapi.ConfigFieldTypeString, Description: "ClinePass API base URL (default https://api.cline.bot)."},
-				{Name: "api-keys", Type: pluginapi.ConfigFieldTypeArray, Description: "ClinePass API keys to poll for usage-limit windows."},
+				{Name: "api-keys", Type: pluginapi.ConfigFieldTypeArray, Description: `ClinePass API keys to poll, e.g. ["key"] or [{"value": "key", "label": "work"}].`},
 				{Name: "request-timeout", Type: pluginapi.ConfigFieldTypeString, Description: "Upstream request timeout (default 15s)."},
 			},
 		},
