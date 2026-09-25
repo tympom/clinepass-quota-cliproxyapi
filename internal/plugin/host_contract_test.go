@@ -31,6 +31,32 @@ type rpcManagementRegistrationResponse struct {
 	Resources []pluginapi.ResourceRoute   `json:"resources,omitempty"`
 }
 
+func TestRegisterWithoutKeysThenConfigure(t *testing.T) {
+	mgr := NewManager(nil)
+	var env rpcEnvelope
+	raw, err := mgr.HandleCall(pluginabi.MethodPluginRegister, []byte(`{"config_yaml":null}`))
+	if err != nil || json.Unmarshal(raw, &env) != nil || !env.OK {
+		t.Fatalf("keyless register failed: %v, %s", err, raw)
+	}
+	var reg struct {
+		Metadata pluginapi.Metadata `json:"metadata"`
+	}
+	if err := json.Unmarshal(env.Result, &reg); err != nil || len(reg.Metadata.ConfigFields) != 3 {
+		t.Fatalf("keyless config editor fields unavailable: %v, %+v", err, reg.Metadata.ConfigFields)
+	}
+	if len(mgr.cfg.APIKeys) != 0 {
+		t.Fatal("unconfigured plugin has credentials")
+	}
+
+	raw, err = mgr.HandleCall(pluginabi.MethodPluginReconfigure, []byte(`{"config_yaml":"YXBpLWtleXM6CiAgLSB2YWx1ZTogc2stdGVzdAo="}`))
+	if err != nil || json.Unmarshal(raw, &env) != nil || !env.OK {
+		t.Fatalf("keyed reconfigure failed: %v, %s", err, raw)
+	}
+	if len(mgr.cfg.APIKeys) != 1 || mgr.cfg.APIKeys[0].Value != "sk-test" {
+		t.Fatal("configured key not applied")
+	}
+}
+
 func TestManagementRegisterMatchesHostWireContract(t *testing.T) {
 	mgr := NewManager(NewHostBridge(func(string, []byte) ([]byte, error) { return nil, nil }))
 

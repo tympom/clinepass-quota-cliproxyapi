@@ -78,9 +78,6 @@ func (c Config) validate() error {
 	if err := validateURL("base-url", c.BaseURL, c.AllowHTTP); err != nil {
 		return err
 	}
-	if len(c.APIKeys) == 0 {
-		return fmt.Errorf("api-keys: at least one key is required")
-	}
 	for i, k := range c.APIKeys {
 		if k.Value == "" {
 			return fmt.Errorf("api-keys[%d].value: expanded to empty", i)
