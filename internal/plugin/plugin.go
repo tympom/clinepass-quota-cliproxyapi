@@ -16,12 +16,15 @@ import (
 // as the Management API/resource route prefix.
 const (
 	pluginName    = "clinepass-quota-cliproxyapi"
-	pluginVersion = "1.0.5"
+	pluginVersion = "1.0.6"
 )
 
 // githubRepoURL satisfies the host's validPlugin gate (Metadata.GitHubRepository
 // must be non-empty). This plugin is locally built and not published.
 const githubRepoURL = "https://github.com/local/clinepass-quota-cliproxyapi"
+
+// logoURL is shown by the Management Center Plugins page.
+const logoURL = "https://raw.githubusercontent.com/tympom/clinepass-quota-cliproxyapi/master/assets/logo.png"
 
 // Manager owns dispatcher state (the current config snapshot) and routes
 // every RPC method. Safe for concurrent HandleCall use.
@@ -79,6 +82,7 @@ func registrationEnvelope() []byte {
 			Version:          pluginVersion,
 			Author:           pluginName,
 			GitHubRepository: githubRepoURL,
+			Logo:             logoURL,
 			ConfigFields: []pluginapi.ConfigField{
 				{Name: "base-url", Type: pluginapi.ConfigFieldTypeString, Description: "ClinePass API base URL (default https://api.cline.bot)."},
 				{Name: "api-keys", Type: pluginapi.ConfigFieldTypeArray, Description: `ClinePass API keys to poll, e.g. ["key"] or [{"value": "key", "label": "work"}].`},
