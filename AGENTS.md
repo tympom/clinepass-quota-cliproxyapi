@@ -1,4 +1,4 @@
-# AGENTS.md
+# clinepass-quota-cliproxyapi
 
 Include parent `AGENTS.md`.
 
