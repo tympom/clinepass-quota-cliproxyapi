@@ -5,7 +5,7 @@ A [CLIProxyAPI](https://help.router-for.me/plugin/development) plugin that adds 
 5-hour, weekly and monthly usage windows, titled with the account name, with **Refresh**
 and **Refresh All**.
 
-It does not proxy requests — use a plain OpenAI-compatible provider pointed at
+It does not proxy requests; use a plain OpenAI-compatible provider pointed at
 `https://api.cline.bot/api/v1` for that. Needs a [ClinePass](https://docs.cline.bot/getting-started/clinepass)
 API key (**app.cline.bot → Settings → API Keys**).
 
@@ -40,4 +40,4 @@ The quota page authenticates with the Management Center's stored key: enable
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT; see [LICENSE](LICENSE).
