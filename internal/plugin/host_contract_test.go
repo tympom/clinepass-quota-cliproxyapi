@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/router-for-me/CLIProxyAPI/v7/sdk/pluginabi"
-	"github.com/router-for-me/CLIProxyAPI/v7/sdk/pluginapi"
+	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginabi"
+	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
 // These tests decode our RPC responses using the *actual* host-side SDK
-// types (from the same github.com/router-for-me/CLIProxyAPI/v7/sdk/pluginapi
+// types (from the same github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi
 // package the real host uses to parse them), instead of our own hand-rolled
 // anonymous structs. A field-name/shape mismatch against the real wire
 // contract fails here instead of silently producing an empty card list or a

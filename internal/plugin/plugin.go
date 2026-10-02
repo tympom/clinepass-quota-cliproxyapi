@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/router-for-me/CLIProxyAPI/v7/sdk/pluginabi"
-	"github.com/router-for-me/CLIProxyAPI/v7/sdk/pluginapi"
+	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginabi"
+	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 
 	"clinepass-quota-cliproxyapi/internal/config"
 )
@@ -16,7 +16,7 @@ import (
 // as the Management API/resource route prefix.
 const (
 	pluginName    = "clinepass-quota-cliproxyapi"
-	pluginVersion = "1.0.8"
+	pluginVersion = "1.1.0"
 )
 
 // githubRepoURL satisfies the host's validPlugin gate (Metadata.GitHubRepository
