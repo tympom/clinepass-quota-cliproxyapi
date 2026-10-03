@@ -36,6 +36,3 @@ __pycache__/
 *.dll
 *.h
 /dist/
-
-## Local AI-agent task handoff
-/.ai/HANDOFF.md
